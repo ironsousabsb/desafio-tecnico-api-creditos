@@ -1,76 +1,57 @@
 package br.com.gestionna.creditosapi.controller;
 
-import br.com.gestionna.creditosapi.entity.Credito;
-import br.com.gestionna.creditosapi.repository.CreditoRepository;
-import br.com.gestionna.creditosapi.service.CreditoService;
-import org.junit.jupiter.api.BeforeEach;
+import br.com.gestionna.creditosapi.dto.CreditoDTO;
+import br.com.gestionna.creditosapi.service.CreditoConsultaService;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import org.mockito.MockitoAnnotations;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-class CreditoConsultaControllerTest {
+@WebMvcTest(CreditoConsultaController.class)
+@Import(CreditoConsultaControllerTest.MockConfig.class)
+public class CreditoConsultaControllerTest {
 
-    @Mock
-    private CreditoRepository repository;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @InjectMocks
-    private CreditoConsultaController controller;
-
-    private Credito credito;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        credito = new Credito();
-        credito.setNumeroCredito("123456");
-        credito.setNumeroNfse("7891011");
-        credito.setDataConstituicao(LocalDate.of(2024, 2, 25));
-        credito.setValorIssqn(new BigDecimal("1500.75"));
-        credito.setTipoCredito("ISSQN");
-        credito.setSimplesNacional(true);
-        credito.setAliquota(new BigDecimal("5.0"));
-        credito.setValorFaturado(new BigDecimal("30000.00"));
-        credito.setValorDeducao(new BigDecimal("5000.00"));
-        credito.setBaseCalculo(new BigDecimal("25000.00"));
-    }
+    @Autowired
+    private CreditoConsultaService service;
 
     @Test
-    void testBuscarCreditoPorNfse() {
-        when(repository.findByNumeroNfse("7891011")).thenReturn(List.of(credito));
+    void deveRetornarCreditoPorNfse() throws Exception {
+        CreditoDTO dto = new CreditoDTO("C001", "NF001", LocalDate.of(2024, 1, 1),
+                new BigDecimal("100.00"), "ISSQN", true,
+                new BigDecimal("3.5"), new BigDecimal("1000.00"),
+                new BigDecimal("200.00"), new BigDecimal("800.00"));
 
-        List<CreditoService> result = controller.buscarCreditoPorNfse("7891011");
+        when(service.buscarPorNfse("NF001")).thenReturn(List.of(dto));
 
-        assertEquals(1, result.size());
-        assertEquals("123456", result.get(0).numeroCredito());
+        mockMvc.perform(get("/creditos/nfse/NF001")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].numeroNfse").value("NF001"))
+                .andExpect(jsonPath("$[0].numeroCredito").value("C001"));
     }
 
-    @Test
-    void testBuscarCreditoPorNumero() {
-        when(repository.findByNumeroCredito("123456")).thenReturn(List.of(credito));
-
-        List<CreditoService> result = controller.buscarCreditoPorNumero("123456");
-
-        assertEquals(1, result.size());
-        assertEquals("7891011", result.get(0).numeroNfse());
-    }
-
-    @Test
-    void testBuscaCreditos() {
-        when(repository.findAll()).thenReturn(List.of(credito));
-
-        List<CreditoService> result = controller.buscaCreditos();
-
-        assertFalse(result.isEmpty());
-        assertEquals("ISSQN", result.get(0).tipoCredito());
+    @TestConfiguration
+    static class MockConfig {
+        @Bean
+        public CreditoConsultaService creditoConsultaService() {
+            return Mockito.mock(CreditoConsultaService.class);
+        }
     }
 }

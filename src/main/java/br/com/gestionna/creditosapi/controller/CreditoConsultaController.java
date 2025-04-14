@@ -1,40 +1,33 @@
 package br.com.gestionna.creditosapi.controller;
 
-import br.com.gestionna.creditosapi.entity.Credito;
-import br.com.gestionna.creditosapi.repository.CreditoRepository;
-import br.com.gestionna.creditosapi.service.CreditoService;
-import ch.qos.logback.core.net.SyslogOutputStream;
-import org.springframework.beans.factory.annotation.Autowired;
+import br.com.gestionna.creditosapi.dto.CreditoDTO;
+import br.com.gestionna.creditosapi.service.CreditoConsultaService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("creditos")
+@RequestMapping("/creditos")
 public class CreditoConsultaController {
 
-    @Autowired
-    private CreditoRepository repository;
+    private final CreditoConsultaService creditoService;
+
+    public CreditoConsultaController(CreditoConsultaService creditoService) {
+        this.creditoService = creditoService;
+    }
 
     @GetMapping("/nfse/{numeroNfse}")
-    public List<CreditoService> buscarCreditoPorNfse(@PathVariable String numeroNfse) {
-        return repository.findByNumeroNfse(numeroNfse)
-                .stream()
-                .map(CreditoService::new)
-                .collect(Collectors.toList());
+    public List<CreditoDTO> buscarCreditoPorNfse(@PathVariable String numeroNfse) {
+        return creditoService.buscarPorNfse(numeroNfse);
     }
 
     @GetMapping("/numero/{numeroCredito}")
-    public List<CreditoService> buscarCreditoPorNumero(@PathVariable String numeroCredito) {
-        return repository.findByNumeroCredito(numeroCredito)
-                .stream()
-                .map(CreditoService::new)
-                .collect(Collectors.toList());
+    public List<CreditoDTO> buscarCreditoPorNumero(@PathVariable String numeroCredito) {
+        return creditoService.buscarPorNumeroCredito(numeroCredito);
     }
 
     @GetMapping
-    public List<CreditoService> buscaCreditos(){
-        return repository.findAll().stream().map(CreditoService::new).toList();
+    public List<CreditoDTO> buscarTodosCreditos() {
+        return creditoService.buscarTodos();
     }
 }
